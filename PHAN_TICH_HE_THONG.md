@@ -56,7 +56,7 @@ Frontend/src/
 #### 3. **Chi tiết Phòng (Room Menu Detail)** `/room/:id`
 - Thông tin chi tiết phòng
 - Giá tiền, số lượng chỗ
-- Danh sách sinh viên trong phòng
+- Danh sách học sinh trong phòng
 
 #### 4. **Trang Chính sách (Policy Page)** `/policy/register`
 - Chính sách đăng ký ký túc xá
@@ -67,7 +67,7 @@ Frontend/src/
 #### 1. **Trang Đăng nhập (Login)** `/login`
 - Nhập CMND (Chứng minh nhân dân)
 - Nhập Mật khẩu
-- Đăng nhập theo vai trò (Sinh viên, Admin)
+- Đăng nhập theo vai trò (Học sinh, Admin)
 
 #### 2. **Trang Đăng xuất (Logout)** `/logout`
 - Xóa token, session
@@ -98,7 +98,7 @@ Frontend/src/
 
 #### 1. **Bảng Điều khiển (Dashboard)** `/admin`
 - Tổng quan thống kê
-- Số lượng sinh viên, phòng
+- Số lượng học sinh, phòng
 - Doanh thu, tình trạng thanh toán
 
 #### 2. **Quản lý Học sinh (Student Management)**
@@ -149,20 +149,20 @@ Frontend/src/
 
 ##### 4.2 **Chi tiết Hóa đơn (Bill Detail)** `/admin/bill/:id`
 - Thông tin hóa đơn chi tiết
-- Sinh viên liên quan
+- Học sinh liên quan
 - Phòng, giá, ngày tháng
 - Cập nhật trạng thái (Chưa thanh toán/Đã thanh toán)
 
 #### 5. **Quản lý Yêu cầu (Request Management)** `/admin/requests`
 - **Các loại yêu cầu**:
   - **Yêu cầu Checkout (Check out)**
-    - Sinh viên muốn rời phòng
+    - Học sinh muốn rời phòng
     - Xem, duyệt, từ chối
   - **Yêu cầu Đổi phòng (Change Room)**
-    - Sinh viên yêu cầu đổi phòng
+    - Học sinh yêu cầu đổi phòng
     - Xem lý do, chọn phòng mới
   - **Yêu cầu Gia hạn (Extend)**
-    - Sinh viên yêu cầu gia hạn thời gian ở
+    - Học sinh yêu cầu gia hạn thời gian ở
     - Chọn thời gian mới
   - **Yêu cầu Sửa phòng (Fix Room)**
     - Phòng có hư hỏng cần sửa
@@ -264,15 +264,15 @@ Frontend/src/
 | POST | `/api/rooms/fix` | Tạo yêu cầu sửa phòng | - |
 | PUT | `/api/rooms/fix/:id` | Cập nhật yêu cầu sửa phòng | - |
 
-### D. API SINH VIÊN (Users)
+### D. API HỌC SINH (Users)
 
 | Method | Endpoint | Mô tả | Auth |
 |--------|----------|-------|------|
-| GET | `/api/user` | Lấy tất cả sinh viên | - |
-| GET | `/api/user/:id` | Lấy chi tiết sinh viên | - |
-| POST | `/api/user` | Tạo sinh viên mới | - |
-| PUT | `/api/user/:id` | Cập nhật sinh viên | - |
-| DELETE | `/api/user/:id` | Xóa sinh viên | VerifyAdmin |
+| GET | `/api/user` | Lấy tất cả học sinh | - |
+| GET | `/api/user/:id` | Lấy chi tiết học sinh | - |
+| POST | `/api/user` | Tạo học sinh mới | - |
+| PUT | `/api/user/:id` | Cập nhật học sinh | - |
+| DELETE | `/api/user/:id` | Xóa học sinh | VerifyAdmin |
 
 **Dữ liệu Học sinh**:
 ```json
@@ -300,7 +300,7 @@ Frontend/src/
 |--------|----------|-------|------|
 | GET | `/api/roomdetails` | Lấy tất cả chi tiết phòng | VerifyAdmin |
 | GET | `/api/roomdetails/:id` | Lấy chi tiết phòng | VerifyAdmin |
-| POST | `/api/roomdetails` | Thêm sinh viên vào phòng | - |
+| POST | `/api/roomdetails` | Thêm học sinh vào phòng | - |
 | PUT | `/api/roomdetails/:id` | Cập nhật chi tiết phòng | VerifyAdmin |
 | DELETE | `/api/roomdetails/:id` | Xóa chi tiết phòng | VerifyAdmin |
 
@@ -310,7 +310,7 @@ Frontend/src/
 |--------|----------|-------|------|
 | GET | `/api/hd` | Lấy tất cả hóa đơn | - |
 | GET | `/api/hd/:id` | Lấy chi tiết hóa đơn | - |
-| GET | `/api/hd/student/:cmnd` | Lấy hóa đơn của sinh viên | - |
+| GET | `/api/hd/student/:cmnd` | Lấy hóa đơn của học sinh | - |
 | POST | `/api/hd` | Tạo hóa đơn mới | - |
 | PUT | `/api/hd/:id` | Cập nhật hóa đơn | - |
 
@@ -333,7 +333,7 @@ Frontend/src/
 }
 ```
 
-### G. API QUẢN TRỊVIÊN (Admin)
+### G. API QUẢN TRỊ VIÊN (Admin)
 
 | Method | Endpoint | Mô tả | Auth |
 |--------|----------|-------|------|
@@ -377,7 +377,7 @@ Frontend/src/
 }
 ```
 
-### 2. **User (Sinh viên)**
+### 2. **User (Học sinh)**
 ```javascript
 {
   HoTen: String,
