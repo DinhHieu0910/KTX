@@ -22,7 +22,7 @@ const app = express();
 
 dotenv.config();
 
-var whitelist = ['http://localhost:8000', 'http://localhost:3000']; //white list consumers
+var whitelist = ['http://localhost:8000', 'http://localhost:3000', 'https://postlaryngeal-riotingly-juniper.ngrok-free.dev', 'https://e861-2402-800-61ea-beb0-88c8-cce5-4281-eac2.ngrok-free.app']; //white list consumers
 var corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {

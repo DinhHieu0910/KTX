@@ -38,9 +38,9 @@ Frontend/src/
 
 ---
 
-## III. CÁC MÀNG HÌNH (SCREENS)
+## III. CÁC MÀN HÌNH (SCREENS)
 
-### A. MÀNG HÌNH CÔNG KHAI (Public Routes)
+### A. MÀN HÌNH CÔNG KHAI (Public Routes)
 Được truy cập mà không cần đăng nhập
 
 #### 1. **Trang Chủ (Home Page)** `/` hoặc `/home`
@@ -62,7 +62,7 @@ Frontend/src/
 - Chính sách đăng ký ký túc xá
 - Thông tin chung về quy định
 
-### B. MÀNG HÌNH XÁC THỰC (Authentication Routes)
+### B. MÀN HÌNH XÁC THỰC (Authentication Routes)
 
 #### 1. **Trang Đăng nhập (Login)** `/login`
 - Nhập CMND (Chứng minh nhân dân)
@@ -73,7 +73,7 @@ Frontend/src/
 - Xóa token, session
 - Quay về trang chủ
 
-### D. MÀNG HÌNH HỌC SINH (Student Routes)
+### D. MÀN HÌNH HỌC SINH (Student Routes)
 
 #### 1. **Trang Thông tin Cá nhân (Student Profile)** `/student/profile/:id`
 - **Hiển thị thông tin học sinh**:
@@ -94,7 +94,7 @@ Frontend/src/
 - Trạng thái phòng (đang ở, đã xuất)
 - Ngày check-in/check-out
 
-### D. MÀNG HÌNH QUẢN TRỊ VIÊN (Admin Routes)
+### D. MÀN HÌNH QUẢN TRỊ VIÊN (Admin Routes)
 
 #### 1. **Bảng Điều khiển (Dashboard)** `/admin`
 - Tổng quan thống kê
@@ -499,6 +499,384 @@ Frontend/src/
 
 ## VIII. LUỒNG NGHIỆP VỤ CHÍNH
 
+---
+
+# ⭐ CHỨC NĂNG CHÍNH CHO CUỘC THI: THEO DÕI ĐÓN, TRẢ HỌC SINH (ĐỘT XUẤT)
+
+## IX. TỔNG QUAN CHỨC NĂNG PICKUP/DROPOFF
+
+**Mục tiêu**: Quản lý việc đón và trả học sinh trong các trường hợp đột xuất (ốm, có việc gia đình, khẩn cấp, v.v...)
+
+**Tầm quan trọng**: 
+- ⭐⭐⭐⭐⭐ **Chức năng này là chính của dự án cho cuộc thi sắp tới**
+- Giải quyết nhu cầu quan trọng của nhà trường
+- Tăng tính bảo mật và quản lý học sinh hiệu quả
+- Hỗ trợ phụ huynh, giáo viên chủ nhiệm theo dõi tình hình
+
+---
+
+## X. CẤU TRÚC DATABASE - PICKUP/DROPOFF
+
+### Model: PickupDropoff
+
+```javascript
+{
+  userId: ObjectId,              // ID học sinh
+  studentInfo: {
+    HoTen: String,
+    MHV: String,
+    CMND: String,
+    roomTitle: String,
+    roomId: ObjectId
+  },
+  pickupPerson: {
+    fullName: String,            // Họ tên người đón
+    relationship: String,        // Quan hệ với HS
+    idCard: String,             // Số căn cước CD
+    phone: String               // SĐT người đón
+  },
+  pickupTime: Date,             // Thời gian đón
+  reason: String,               // Lý do HS nghỉ
+  pickupSignature: String,      // Ký nhận
+  dropoffTime: Date,            // Thời gian trả
+  dropoffSignature: String,     // Ký trả
+  status: Number,               // Trạng thái
+  approvedBy: String,
+  approvedAt: Date,
+  rejectedReason: String,
+  createdBy: String,
+  updatedBy: String
+}
+```
+
+### Trạng thái (status):
+- **0** - Chờ phê duyệt (Pending)
+- **1** - Đã phê duyệt - Đã đón (Approved/Picked up)
+- **2** - Đã trả (Returned)
+- **3** - Từ chối (Rejected)
+
+---
+
+## XI. API ENDPOINTS - PICKUP/DROPOFF
+
+### Backend Routes: `/api/pickup-dropoff`
+
+| Method | Endpoint | Mô tả | Auth | Ưu tiên |
+|--------|----------|-------|------|---------|
+| GET | `/` | Lấy tất cả yêu cầu | - | 🔴 |
+| GET | `/:id` | Lấy chi tiết yêu cầu | - | 🟡 |
+| GET | `/user/:userId` | Lấy yêu cầu theo user | - | 🟡 |
+| POST | `/` | Tạo yêu cầu đón HS | - | 🔴 |
+| PUT | `/approve/:id` | Phê duyệt yêu cầu | VerifyAdmin | 🔴 |
+| PUT | `/reject/:id` | Từ chối yêu cầu | VerifyAdmin | 🟡 |
+| PUT | `/dropoff/:id` | Cập nhật thời gian trả | VerifyAdmin | 🔴 |
+| PUT | `/:id` | Cập nhật yêu cầu | - | 🟡 |
+| DELETE | `/:id` | Xóa yêu cầu | VerifyAdmin | 🟡 |
+
+🔴 = Chức năng cốt lõi (Core features)  
+🟡 = Chức năng hỗ trợ (Supporting features)
+
+---
+
+## XII. GIAO DIỆN NGƯỜI DÙNG - PICKUP/DROPOFF
+
+### 1. Trang Quản lý Đón, Trả Học sinh
+**Route**: `/admin/pickup-dropoff` (Public - Bất kỳ ai cũng vào được)
+
+#### 📊 Bảng dữ liệu hiển thị:
+
+| STT | Họ tên HS | Phòng | Quan hệ | CCCD | Thời gian đón | Lý do | Ký nhận | Thời gian trả | Ký trả | Trạng thái | Thao tác |
+|-----|-----------|-------|---------|------|----------------|-------|---------|----------------|---------|-------------|----------|
+| 1 | Nguyễn A | 101 | Mẹ | 123456789 | 09:30 - 06/02/2026 | Ốm | [Ký] | 14:00 - 06/02/2026 | [Ký] | Đã trả | [Thao tác] |
+
+#### ✨ Chức năng:
+- ✅ **Tìm kiếm nhanh**: Theo tên HS, mã HS, người đón
+- ✅ **Tạo yêu cầu mới**: Button "Tạo yêu cầu đón học sinh"
+- ✅ **Phê duyệt yêu cầu**: Button "Phê duyệt" cho trạng thái "Chờ phê duyệt"
+- ✅ **Từ chối yêu cầu**: Button "Từ chối" với nhập lý do
+- ✅ **Cập nhật thời gian trả**: Button "Đã trả" để mark học sinh đã được trả về
+- ✅ **Xóa yêu cầu**: Button "Xóa" cho admin
+- ✅ **Phân trang**: Hỗ trợ phân trang cho danh sách lớn
+
+### 2. Form Tạo Yêu cầu Đón Học sinh
+**Component**: `CreatePickupRequest` (Modal)
+
+#### 📝 Các trường nhập liệu:
+
+| Trường | Kiểu | Bắt buộc | Ghi chú |
+|--------|------|----------|---------|
+| Chọn học sinh | Dropdown | ✓ | Fetch từ API public `/api/user` |
+| Họ tên người đón | Text | ✓ | Phải nhập đầy đủ |
+| Quan hệ với HS | Select | ✓ | Cha, Mẹ, Anh, Chị, Người khác |
+| Số CCCD người đón | Text | ✓ | Validate format CCCD |
+| Số điện thoại | Text | ✓ | Validate số điện thoại |
+| Thời gian đón | DateTime | ✓ | Không được quá khứ |
+| Lý do HS nghỉ | Textarea | ✓ | Mô tả lý do (ốm, gia đình, ...) |
+
+#### 🎯 Validation:
+- Tất cả trường có dấu (*) là bắt buộc
+- Thời gian đón phải >= thời gian hiện tại
+- Số điện thoại phải có format hợp lệ
+- CCCD phải có ít nhất 9 ký tự
+
+---
+
+## XIII. NAVIGATION - PICKUP/DROPOFF
+
+### 1. Menu Chính (NavBar)
+```
+Trang chủ | Loại phòng | Dịch vụ | Theo dõi đón, trả HS (Đột xuất)
+```
+- **Link**: `/admin/pickup-dropoff`
+- **Hiển thị**: Cho tất cả người dùng (public)
+
+### 2. Admin Sidebar
+```
+📍 Đón, trả HS (Đột xuất)
+   └─ Danh sách đón/trả
+```
+- **Đường dẫn**: `/admin/pickup-dropoff`
+
+---
+
+## XIV. LUỒNG HOẠT ĐỘNG PICKUP/DROPOFF
+
+### Quy trình 1️⃣: TẠO YÊU CẦU ĐÓN HỌC SINH
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 1: Truy cập trang quản lý                          │
+│ → Trang: /admin/pickup-dropoff                          │
+│ → Người: Bất kỳ ai cũng vào được                        │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 2: Click nút "Tạo yêu cầu đón học sinh"           │
+│ → Hiển thị Modal CreatePickupRequest                    │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 3: Nhập thông tin:                                 │
+│ ✓ Chọn học sinh từ dropdown                             │
+│ ✓ Họ tên người đón                                      │
+│ ✓ Quan hệ với HS                                        │
+│ ✓ Số CCCD người đón                                     │
+│ ✓ Số điện thoại                                         │
+│ ✓ Thời gian đón                                         │
+│ ✓ Lý do HS nghỉ                                         │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 4: Click "Tạo yêu cầu"                             │
+│ → API: POST /api/pickup-dropoff                         │
+│ → Response: Yêu cầu được tạo                            │
+│ → Status: 0 (Chờ phê duyệt)                             │
+└─────────────────────────────────────────────────────────┘
+           ↓
+✅ THÀNH CÔNG: Yêu cầu xuất hiện trong bảng danh sách
+               (Status: Chờ phê duyệt - Màu vàng)
+```
+
+### Quy trình 2️⃣: PHÊ DUYỆT YÊU CẦU
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 1: Tìm yêu cầu cần phê duyệt                       │
+│ → Lọc yêu cầu có status = "Chờ phê duyệt"              │
+│ → Có thể tìm kiếm theo tên HS, mã HS                    │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 2: Click nút "Phê duyệt"                           │
+│ → Hiển thị confirm dialog                               │
+│ → Xác nhận: "Xác nhận phê duyệt yêu cầu đón HS?"       │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 3: Xác nhận phê duyệt                              │
+│ → API: PUT /api/pickup-dropoff/approve/:id              │
+│ → Data: { approvedBy, pickupSignature, approvedAt }    │
+└─────────────────────────────────────────────────────────┘
+           ↓
+✅ THÀNH CÔNG: Status thay đổi từ 0 → 1 (Đã đón)
+               Màu sắc thay đổi sang xanh
+               Lưu lại thời gian & người phê duyệt
+```
+
+### Quy trình 3️⃣: TỪ CHỐI YÊU CẦU
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 1: Xem yêu cầu cần từ chối                         │
+│ → Status = "Chờ phê duyệt"                              │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 2: Click nút "Từ chối"                             │
+│ → Hiển thị prompt nhập lý do                            │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 3: Nhập lý do từ chối                              │
+│ → Ví dụ: "Thông tin người đón không chính xác"          │
+│ → Click OK                                              │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 4: Gửi yêu cầu từ chối                             │
+│ → API: PUT /api/pickup-dropoff/reject/:id               │
+│ → Data: { rejectedReason, approvedBy }                  │
+└─────────────────────────────────────────────────────────┘
+           ↓
+✅ THÀNH CÔNG: Status thay đổi 0 → 3 (Từ chối)
+               Màu đỏ, lưu lý do từ chối
+               Yêu cầu không thể chỉnh sửa thêm
+```
+
+### Quy trình 4️⃣: CẬP NHẬT THỜI GIAN TRẢ HỌC SINH
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 1: Tìm yêu cầu đã được đón                         │
+│ → Status = 1 (Đã đón)                                   │
+│ → Màu xanh                                              │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 2: Click nút "Đã trả"                              │
+│ → Hiển thị confirm: "Xác nhận HS đã được trả về?"      │
+└─────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────┐
+│ BƯỚC 3: Xác nhận trả HS                                 │
+│ → API: PUT /api/pickup-dropoff/dropoff/:id              │
+│ → Data: { dropoffTime: NOW(), dropoffSignature }        │
+└─────────────────────────────────────────────────────────┘
+           ↓
+✅ THÀNH CÔNG: Status thay đổi 1 → 2 (Đã trả)
+               Màu xanh nhạt
+               Lưu thời gian trả thực tế
+               Yêu cầu hoàn tất
+```
+
+---
+
+## XV. CÁC FILE LIÊN QUAN - PICKUP/DROPOFF
+
+### Backend Files
+
+#### 📄 Models
+```
+Backend/API/Models/PickupDropoff.js
+├── Schema định nghĩa
+├── Tất cả các field như trên
+├── Indexes: userId, createdAt
+└── Timestamps: createdAt, updatedAt
+```
+
+#### 🎮 Controllers
+```
+Backend/API/Controllers/pickupDropoff.js
+├── createPickupRequest()      - Tạo yêu cầu
+├── getAllPickupRequests()     - Lấy tất cả
+├── getPickupRequest()         - Lấy chi tiết
+├── getPickupRequestByUser()   - Lấy theo user
+├── approvePickupRequest()     - Phê duyệt
+├── rejectPickupRequest()      - Từ chối
+├── updateDropoffTime()        - Cập nhật trả
+├── updatePickupRequest()      - Cập nhật
+└── deletePickupRequest()      - Xóa
+```
+
+#### 🛣️ Routes
+```
+Backend/API/Routes/pickupDropoff.js
+├── GET    /api/pickup-dropoff
+├── GET    /api/pickup-dropoff/:id
+├── GET    /api/pickup-dropoff/user/:userId
+├── POST   /api/pickup-dropoff
+├── PUT    /api/pickup-dropoff/approve/:id
+├── PUT    /api/pickup-dropoff/reject/:id
+├── PUT    /api/pickup-dropoff/dropoff/:id
+├── PUT    /api/pickup-dropoff/:id
+└── DELETE /api/pickup-dropoff/:id
+```
+
+### Frontend Files
+
+#### 🔗 API Client
+```
+Frontend/src/API/pickupDropoff.js
+├── getAllPickupRequests()
+├── createPickupRequest()
+├── getPickupRequest()
+├── approvePickupRequest()
+├── rejectPickupRequest()
+├── updateDropoffTime()
+└── deletePickupRequest()
+```
+
+#### 📄 Pages
+```
+Frontend/src/pages/Admin/PickupDropoffManagement.jsx
+├── Hiển thị bảng danh sách
+├── Tìm kiếm
+├── Tính năng CRUD
+├── Xử lý mutation (approve, reject, dropoff, delete)
+└── React Query integration
+```
+
+#### 🧩 Components
+```
+Frontend/src/components/PickupDropoff/CreatePickupRequest.jsx
+├── Modal form
+├── Student dropdown (getallUser API)
+├── Pickup person info fields
+├── DateTime picker
+├── Reason textarea
+├── Submit & cancel buttons
+└── Form validation
+```
+
+---
+
+## XVI. MỤC TIÊU & ỨNG DỤNG THỰC TẾ
+
+### 🎯 Giải quyết vấn đề:
+1. **Quản lý an toàn học sinh**: Theo dõi ai đón HS, lúc nào đón, lý do gì
+2. **Dấu vết hành chính**: Lưu lại ký tên người đón để tra soát pháp lý
+3. **Hỗ trợ phụ huynh**: Phụ huynh có thể kiểm tra request đã được duyệt hay chưa
+4. **Tăng hiệu quả quản lý**: Tự động hóa quy trình, giảm paperwork
+
+### 💼 Tính năng nổi bật:
+- ✅ Người dùng bất kỳ (không cần admin) có thể tạo yêu cầu
+- ✅ Phê duyệt/từ chối được kiểm soát bởi admin
+- ✅ Lưu trữ đầy đủ dấu vết (timestamps, signatures)
+- ✅ Tìm kiếm nhanh theo tên, mã học sinh
+- ✅ Trạng thái rõ ràng (Chờ phê duyệt → Đã đón → Đã trả)
+
+---
+
+## XVII. HƯỚNG PHÁT TRIỂN TƯƠNG LAI
+
+1. **Thêm thông báo**: 
+   - Gửi email/SMS khi yêu cầu được phê duyệt/từ chối
+   - Push notification cho phụ huynh
+
+2. **Tích hợp QR Code**: 
+   - Tạo QR code cho mỗi yêu cầu
+   - Scan khi đón/trả HS
+
+3. **Lịch sử lâu dài**: 
+   - Báo cáo thống kê theo tháng
+   - Phân tích mẫu đón HS
+
+4. **API tích hợp**: 
+   - Kết nối với hệ thống thông báo tự động
+   - Gửi dữ liệu về hệ thống lớp học
+
+---
+
 ### 1. **Luồng Đăng ký Học sinh**
 1. Admin vào `/admin/student/signup`
 2. Nhập thông tin CMND, mật khẩu, vai trò
@@ -582,7 +960,3 @@ Frontend/src/
 - Backup dữ liệu
 - Audit log
 - Two-factor authentication
-
----
-
-**Ngày phân tích**: 5 Tháng 2 Năm 2026

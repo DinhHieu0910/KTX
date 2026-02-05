@@ -231,7 +231,3 @@ npm start
 3. **Thời gian**: Định dạng hiển thị: `HH:mm - dd/MM/yyyy`
 4. **Trạng thái**: Không thể phê duyệt lại yêu cầu đã phê duyệt/từ chối
 5. **Xóa**: Nên cẩn thận khi xóa yêu cầu
-
----
-
-**Ngày tạo**: 6 Tháng 2 Năm 2026
